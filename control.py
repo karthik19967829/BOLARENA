@@ -1,5 +1,34 @@
 import time
 from abc import ABC, abstractmethod
+import os 
+import openai 
+
+prompt_template = """
+Given the following examples of task execution plan with agents Schedule_Agent and Search_Agent, generate the task execution plan for the given query:
+
+Example 1:
+Input: "find a concert nearby"
+Task Execution Plan:
+Call Search_Agent("find a concert nearby") 
+The response of the Search_Agent is "Events available:Mexican concert at 2PM and Hindustani concert 5PM"
+Call Schedule_Agent("Find available slots among the time slots among the user's schedule [2PM,5PM]")
+The response from Schedule_Agent is 2 PM is available 
+Call Book_Agent("Book Mexican concert at 2 PM")
+
+Example 2:
+Input: "find a concert nearby"
+Task Execution Plan:
+Call Search_Agent("find a science meetup nearby") 
+The response of the Search_Agent is "Events available:LLM event at 1 PM on thursday and Neurosciene event at 3 PM Friday "
+Call Schedule_Agent("Find available slots among the time slots among the user's schedule [1PM Thursday,3PM Friday]")
+The response from Schedule_Agent is 1 PM Thursday is available 
+Call Book_Agent("Book LLM event at 1 PM Thursday")
+
+Example 3:
+Based on the above examples, Generate the execution plan for the following:
+Input: "{}"
+"""
+
 
 class Agent(ABC):
 
@@ -91,3 +120,17 @@ class ControlAgent:
         self.actions[self.cur_session].append(action)
         self.agent_calls[self.cur_session].append(agent.type)
         return action
+
+
+if __name__=="__main__":
+    openai.api_key = os.environ["OPENAI_API_KEY"]
+
+    response = openai.ChatCompletion.create(  # type: ignore
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt_template.format("find events for Monday")}],
+        temperature=0.1,
+        max_tokens=200,
+        top_p=0.95,
+    )
+    answer = response["choices"][0]["message"]["content"]
+    print(answer)
